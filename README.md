@@ -14,7 +14,7 @@
 
 ## Прод
 
-**URL:** TODO — будет вписан после первого деплоя, см. [`docs/deploy.md`](docs/deploy.md)
+**URL:** https://rddh-hello-world.onrender.com
 
 Сейчас в проде — заглушка (`GET /`, `GET /health`), задеплоенная на Render.com. Прод существует с первой недели и дальше только наращивается.
 
