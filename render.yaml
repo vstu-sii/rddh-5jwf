@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: rddh-hello-world
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: APP_ENV
+        value: prod
+      - key: LLM_API_KEY
+        value: stub
