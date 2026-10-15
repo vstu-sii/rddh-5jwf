@@ -1,0 +1,127 @@
+﻿started_at_utc,provider,model_requested,prompt_id,case_id,run_number,raw_output,error,actual_merchant_normalized,actual_category,actual_needs_review,actual_reason,input_tokens,output_tokens,total_tokens,model_returned,latency_ms,estimated_cost,cost_currency
+2026-09-23T17:21:06.032587+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,bank_abbreviation,1,"{
+  ""merchant_normalized"": ""Пяточка"",
+  ""category"": ""Продукты"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Пяточка,Продукты,False,,190,37,227,qwen2.5-7b-instruct-1m,1045.3,0.0,RUB
+2026-09-23T17:21:07.078604+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,bank_abbreviation,2,"{
+  ""merchant_normalized"": ""Пяточка"",
+  ""category"": ""Продукты"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Пяточка,Продукты,False,,190,37,227,qwen2.5-7b-instruct-1m,573.2,0.0,RUB
+2026-09-23T17:21:07.652740+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,bank_abbreviation,3,"{
+  ""merchant_normalized"": ""Пяточка"",
+  ""category"": ""Продукты"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Пяточка,Продукты,False,,190,37,227,qwen2.5-7b-instruct-1m,562.9,0.0,RUB
+2026-09-23T17:21:08.216452+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,taxi_alias,1,"{
+  ""merchant_normalized"": ""Яндекс Go"",
+  ""category"": ""Транспорт"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Яндекс Go,Транспорт,False,,170,35,205,qwen2.5-7b-instruct-1m,566.5,0.0,RUB
+2026-09-23T17:21:08.783281+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,taxi_alias,2,"{
+  ""merchant_normalized"": ""Яндекс Go"",
+  ""category"": ""Транспорт"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Яндекс Go,Транспорт,False,,170,35,205,qwen2.5-7b-instruct-1m,532.5,0.0,RUB
+2026-09-23T17:21:09.316783+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,taxi_alias,3,"{
+  ""merchant_normalized"": ""Яндекс Go"",
+  ""category"": ""Транспорт"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Яндекс Go,Транспорт,False,,170,35,205,qwen2.5-7b-instruct-1m,539.4,0.0,RUB
+2026-09-23T17:21:09.856776+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,pharmacy,1,"{
+  ""merchant_normalized"": ""Аптека.РУ"",
+  ""category"": ""Здоровье"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Аптека.РУ,Здоровье,False,,185,38,223,qwen2.5-7b-instruct-1m,599.7,0.0,RUB
+2026-09-23T17:21:10.456582+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,pharmacy,2,"{
+  ""merchant_normalized"": ""Аптека.Ру"",
+  ""category"": ""Здоровье"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Аптека.Ру,Здоровье,False,,185,38,223,qwen2.5-7b-instruct-1m,570.7,0.0,RUB
+2026-09-23T17:21:11.028540+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,pharmacy,3,"{
+  ""merchant_normalized"": ""Аптека.Ру"",
+  ""category"": ""Здоровье"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Аптека.Ру,Здоровье,False,,185,38,223,qwen2.5-7b-instruct-1m,567.0,0.0,RUB
+2026-09-23T17:21:11.595928+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,marketplace_mixed_basket,1,"{
+  ""merchant_normalized"": ""Ozon"",
+  ""category"": ""Покупки"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Ozon,Покупки,False,,181,34,215,qwen2.5-7b-instruct-1m,554.2,0.0,RUB
+2026-09-23T17:21:12.150732+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,marketplace_mixed_basket,2,"{
+  ""merchant_normalized"": ""Ozon"",
+  ""category"": ""Покупки"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Ozon,Покупки,False,,181,34,215,qwen2.5-7b-instruct-1m,504.9,0.0,RUB
+2026-09-23T17:21:12.656319+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,marketplace_mixed_basket,3,"{
+  ""merchant_normalized"": ""Ozon"",
+  ""category"": ""Покупки"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Ozon,Покупки,False,,181,34,215,qwen2.5-7b-instruct-1m,508.6,0.0,RUB
+2026-09-23T17:21:13.165316+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,utility_payment,1,"{
+  ""merchant_normalized"": ""Мосэнергосбыт"",
+  ""category"": ""ЖКХ"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Мосэнергосбыт,ЖКХ,False,,187,38,225,qwen2.5-7b-instruct-1m,598.6,0.0,RUB
+2026-09-23T17:21:13.765438+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,utility_payment,2,"{
+  ""merchant_normalized"": ""Мосэнергосбыт"",
+  ""category"": ""ЖКХ"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Мосэнергосбыт,ЖКХ,False,,187,38,225,qwen2.5-7b-instruct-1m,569.3,0.0,RUB
+2026-09-23T17:21:14.335540+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,utility_payment,3,"{
+  ""merchant_normalized"": ""Мосэнергосбыт"",
+  ""category"": ""ЖКХ"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,Мосэнергосбыт,ЖКХ,False,,187,38,225,qwen2.5-7b-instruct-1m,582.6,0.0,RUB
+2026-09-23T17:21:14.918508+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,ambiguous_sbp_transfer,1,"{
+  ""merchant_normalized"": ""СБП ПЕРЕВОД Иван И."",
+  ""category"": ""Не определено"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,СБП ПЕРЕВОД Иван И.,Не определено,False,,149,44,193,qwen2.5-7b-instruct-1m,680.5,0.0,RUB
+2026-09-23T17:21:15.599845+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,ambiguous_sbp_transfer,2,"{
+  ""merchant_normalized"": ""СБП ПЕРЕВОД Иван И."",
+  ""category"": ""Не определено"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,СБП ПЕРЕВОД Иван И.,Не определено,False,,149,44,193,qwen2.5-7b-instruct-1m,644.1,0.0,RUB
+2026-09-23T17:21:16.244016+00:00,local_qwen,qwen2.5-7b-instruct-1m,A_short,ambiguous_sbp_transfer,3,"{
+  ""merchant_normalized"": ""СБП ПЕРЕВОД Иван И."",
+  ""category"": ""Не определено"",
+  ""needs_review"": false,
+  ""reason"": """"
+}",,СБП ПЕРЕВОД Иван И.,Не определено,False,,149,44,193,qwen2.5-7b-instruct-1m,647.3,0.0,RUB
+2026-09-23T17:21:16.892343+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,bank_abbreviation,1,"{""merchant_normalized"": ""Пятерочка"", ""category"": ""Продукты"", ""needs_review"": false, ""reason"": ""Данные из чека и банковской операции совпадают""}",,Пятерочка,Продукты,False,Данные из чека и банковской операции совпадают,321,46,367,qwen2.5-7b-instruct-1m,753.5,0.0,RUB
+2026-09-23T17:21:17.645972+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,bank_abbreviation,2,"{""merchant_normalized"": ""Пятерочка"", ""category"": ""Продукты"", ""needs_review"": false, ""reason"": ""Данные из чека и банковской операции совпадают""}",,Пятерочка,Продукты,False,Данные из чека и банковской операции совпадают,321,46,367,qwen2.5-7b-instruct-1m,696.3,0.0,RUB
+2026-09-23T17:21:18.343741+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,bank_abbreviation,3,"{""merchant_normalized"": ""Пятерочка"", ""category"": ""Продукты"", ""needs_review"": false, ""reason"": ""Данные из чека и банковской операции совпадают""}",,Пятерочка,Продукты,False,Данные из чека и банковской операции совпадают,321,46,367,qwen2.5-7b-instruct-1m,723.8,0.0,RUB
+2026-09-23T17:21:19.067781+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,taxi_alias,1,"{""merchant_normalized"": ""Яндекс Go"", ""category"": ""Транспорт"", ""needs_review"": false, ""reason"": ""Операция связана с поездкой в Яндекс Go""}",,Яндекс Go,Транспорт,False,Операция связана с поездкой в Яндекс Go,301,43,344,qwen2.5-7b-instruct-1m,695.4,0.0,RUB
+2026-09-23T17:21:19.764123+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,taxi_alias,2,"{""merchant_normalized"": ""Яндекс Go"", ""category"": ""Транспорт"", ""needs_review"": false, ""reason"": ""Операция связана с поездкой в Яндекс Go""}",,Яндекс Go,Транспорт,False,Операция связана с поездкой в Яндекс Go,301,43,344,qwen2.5-7b-instruct-1m,664.9,0.0,RUB
+2026-09-23T17:21:20.429474+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,taxi_alias,3,"{""merchant_normalized"": ""Яндекс Go"", ""category"": ""Транспорт"", ""needs_review"": false, ""reason"": ""Операция связана с поездкой в Яндекс Go""}",,Яндекс Go,Транспорт,False,Операция связана с поездкой в Яндекс Go,301,43,344,qwen2.5-7b-instruct-1m,662.2,0.0,RUB
+2026-09-23T17:21:21.092570+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,pharmacy,1,"{""merchant_normalized"": ""Аптека.Ру"", ""category"": ""Здоровье"", ""needs_review"": false, ""reason"": ""Продукты и медикаменты""}",,Аптека.Ру,Здоровье,False,Продукты и медикаменты,316,43,359,qwen2.5-7b-instruct-1m,679.8,0.0,RUB
+2026-09-23T17:21:21.772273+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,pharmacy,2,"{""merchant_normalized"": ""Аптека.Ру"", ""category"": ""Здоровье"", ""needs_review"": false, ""reason"": ""Продукты и медикаменты""}",,Аптека.Ру,Здоровье,False,Продукты и медикаменты,316,43,359,qwen2.5-7b-instruct-1m,661.6,0.0,RUB
+2026-09-23T17:21:22.436008+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,pharmacy,3,"{""merchant_normalized"": ""Аптека.Ру"", ""category"": ""Здоровье"", ""needs_review"": false, ""reason"": ""Продукты и медикаменты""}",,Аптека.Ру,Здоровье,False,Продукты и медикаменты,316,43,359,qwen2.5-7b-instruct-1m,646.6,0.0,RUB
+2026-09-23T17:21:23.082653+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,marketplace_mixed_basket,1,"{""merchant_normalized"": ""Ozon"", ""category"": ""Покупки"", ""needs_review"": false, ""reason"": ""Продукты и тетрадь указаны в чеке""}",,Ozon,Покупки,False,Продукты и тетрадь указаны в чеке,312,44,356,qwen2.5-7b-instruct-1m,709.8,0.0,RUB
+2026-09-23T17:21:23.793417+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,marketplace_mixed_basket,2,"{""merchant_normalized"": ""Ozon"", ""category"": ""Покупки"", ""needs_review"": false, ""reason"": ""Продукты и тетрадь указаны в чеке""}",,Ozon,Покупки,False,Продукты и тетрадь указаны в чеке,312,44,356,qwen2.5-7b-instruct-1m,679.5,0.0,RUB
+2026-09-23T17:21:24.474108+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,marketplace_mixed_basket,3,"{""merchant_normalized"": ""Ozon"", ""category"": ""Покупки"", ""needs_review"": false, ""reason"": ""Продукты и тетрадь указаны в чеке""}",,Ozon,Покупки,False,Продукты и тетрадь указаны в чеке,312,44,356,qwen2.5-7b-instruct-1m,664.9,0.0,RUB
+2026-09-23T17:21:25.139192+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,utility_payment,1,"{""merchant_normalized"": ""Мосэнергосбыт"", ""category"": ""ЖКХ"", ""needs_review"": false, ""reason"": ""Покупка электроэнергии""}",,Мосэнергосбыт,ЖКХ,False,Покупка электроэнергии,318,42,360,qwen2.5-7b-instruct-1m,678.6,0.0,RUB
+2026-09-23T17:21:25.818887+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,utility_payment,2,"{""merchant_normalized"": ""Мосэнергосбыт"", ""category"": ""ЖКХ"", ""needs_review"": false, ""reason"": ""Покупка электроэнергии""}",,Мосэнергосбыт,ЖКХ,False,Покупка электроэнергии,318,42,360,qwen2.5-7b-instruct-1m,647.6,0.0,RUB
+2026-09-23T17:21:26.466915+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,utility_payment,3,"{""merchant_normalized"": ""Мосэнергосбыт"", ""category"": ""ЖКХ"", ""needs_review"": false, ""reason"": ""Покупка электроэнергии""}",,Мосэнергосбыт,ЖКХ,False,Покупка электроэнергии,318,42,360,qwen2.5-7b-instruct-1m,633.0,0.0,RUB
+2026-09-23T17:21:27.100816+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,ambiguous_sbp_transfer,1,"{""merchant_normalized"": ""Иван И."", ""category"": ""Покупки"", ""needs_review"": true, ""reason"": ""Операция является СБП переводом""}",,Иван И.,Покупки,True,Операция является СБП переводом,280,39,319,qwen2.5-7b-instruct-1m,648.6,0.0,RUB
+2026-09-23T17:21:27.750528+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,ambiguous_sbp_transfer,2,"{""merchant_normalized"": ""Иван И."", ""category"": ""Покупки"", ""needs_review"": true, ""reason"": ""Операция является СБП переводом""}",,Иван И.,Покупки,True,Операция является СБП переводом,280,39,319,qwen2.5-7b-instruct-1m,629.3,0.0,RUB
+2026-09-23T17:21:28.380456+00:00,local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,ambiguous_sbp_transfer,3,"{""merchant_normalized"": ""Иван И."", ""category"": ""Покупки"", ""needs_review"": true, ""reason"": ""Операция является СБП переводом""}",,Иван И.,Покупки,True,Операция является СБП переводом,280,39,319,qwen2.5-7b-instruct-1m,616.7,0.0,RUB

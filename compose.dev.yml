@@ -1,0 +1,35 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      APP_ENV: dev
+      DATABASE_URL: ${DATABASE_URL:-postgresql://rddh:rddh@db:5432/rddh}
+      LLM_API_KEY: ${LLM_API_KEY:-stub}
+    volumes:
+      - ./app:/app/app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Заглушка хранилища для будущей разноски чеков/выписок по категориям.
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: rddh
+      POSTGRES_PASSWORD: rddh
+      POSTGRES_DB: rddh
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rddh"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-data:

@@ -1,0 +1,3 @@
+﻿provider,model_requested,prompt_id,calls,json_valid_rate,category_accuracy,merchant_accuracy,review_accuracy,api_error_rate,mean_total_tokens,mean_latency_ms,total_estimated_cost
+local_qwen,qwen2.5-7b-instruct-1m,A_short,18,1.0,1.0,0.6666666666666666,0.6666666666666666,0.0,214.66666666666666,602.6277777777777,0.0
+local_qwen,qwen2.5-7b-instruct-1m,B_guardrailed,18,1.0,0.8333333333333334,0.6666666666666666,0.8333333333333334,0.0,350.8333333333333,671.7833333333333,0.0
