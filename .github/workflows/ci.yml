@@ -28,6 +28,42 @@ jobs:
       - name: Test (pytest)
         run: pytest
 
+  architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: aact check (0 violations)
+        run: npx --yes aact@3.0.1 check
+
+  schema:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: rddh
+          POSTGRES_PASSWORD: rddh
+          POSTGRES_DB: rddh
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rddh"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply database/schema.sql
+        env:
+          PGPASSWORD: rddh
+        run: psql -h localhost -U rddh -d rddh -v ON_ERROR_STOP=1 -f database/schema.sql
+
   build:
     runs-on: ubuntu-latest
     needs: lint-and-test
@@ -36,3 +72,29 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t rddh-app:ci .
+
+  compose:
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, schema]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate compose file
+        run: docker compose -f compose.dev.yml config -q
+
+      - name: Up and wait for all health checks
+        run: docker compose -f compose.dev.yml up -d --build --wait --wait-timeout 300
+
+      - name: Smoke test
+        run: |
+          curl -fsS http://localhost:8000/health
+          curl -fsS -o /dev/null http://localhost:3000/employee.html
+          curl -fsS -o /dev/null http://localhost:3001/backoffice.html
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f compose.dev.yml logs --no-color
+
+      - name: Down
+        if: always()
+        run: docker compose -f compose.dev.yml down -v

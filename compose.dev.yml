@@ -1,35 +1,200 @@
+# Dev-скелет системы. Имена сервисов = имена контейнеров на docs/architecture/c4-container.puml.
+# Сети повторяют правила aact: к data (БД и файлы) подключён только expense_store (crud, dbPerService),
+# в интернет (egress) выходят только ACL-адаптеры (acl).
+name: rddh
+
+x-stub: &stub
+  image: python:3.11-slim
+  command: ["python", "-u", "/stubs/stub_server.py"]
+  volumes:
+    - ./stubs:/stubs:ro
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=3)"]
+    interval: 5s
+    timeout: 5s
+    retries: 10
+    start_period: 10s
+
+x-web: &web
+  image: nginx:1.30.6-alpine
+  volumes:
+    - ./frontend/prototype:/usr/share/nginx/html:ro
+  healthcheck:
+    test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+    interval: 5s
+    timeout: 5s
+    retries: 10
+  networks: [frontend]
+
 services:
-  app:
+  employee_app:
+    <<: *web
+    ports:
+      - "${EMPLOYEE_APP_PORT:-3000}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  backoffice_web:
+    <<: *web
+    ports:
+      - "${BACKOFFICE_PORT:-3001}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
     build: .
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     ports:
       - "${APP_PORT:-8000}:8000"
     environment:
       APP_ENV: dev
-      DATABASE_URL: ${DATABASE_URL:-postgresql://rddh:rddh@db:5432/rddh}
-      LLM_API_KEY: ${LLM_API_KEY:-stub}
+      EXPENSE_STORE_URL: http://expense_store:8080
+      REDIS_URL: redis://task_queue:6379/0
     volumes:
       - ./app:/app/app
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-    depends_on:
-      db:
-        condition: service_healthy
-
-  # Заглушка хранилища для будущей разноски чеков/выписок по категориям.
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: rddh
-      POSTGRES_PASSWORD: rddh
-      POSTGRES_DB: rddh
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rddh"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
+    networks: [frontend, backend]
+    depends_on:
+      expense_store:
+        condition: service_healthy
+      task_queue:
+        condition: service_healthy
+
+  task_queue:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
+
+  recognition_worker:
+    <<: *stub
+    environment:
+      SERVICE_NAME: recognition_worker
+      REDIS_URL: redis://task_queue:6379/0
+      EXPENSE_STORE_URL: http://expense_store:8080
+      OCR_URL: http://ocr_service:8080
+      LLM_ADAPTER_URL: http://llm_adapter:8080
+      FNS_ADAPTER_URL: http://fns_adapter:8080
+    networks: [backend]
+    depends_on:
+      task_queue:
+        condition: service_healthy
+      expense_store:
+        condition: service_healthy
+      ocr_service:
+        condition: service_healthy
+      llm_adapter:
+        condition: service_healthy
+      fns_adapter:
+        condition: service_healthy
+
+  ocr_service:
+    <<: *stub
+    environment:
+      SERVICE_NAME: ocr_service
+      OCR_LANG: ru
+    networks: [backend]
+
+  llm_adapter:
+    <<: *stub
+    environment:
+      SERVICE_NAME: llm_adapter
+      LLM_PROVIDER: ${LLM_PROVIDER:-local}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://llm_runtime:11434/v1}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:7b-instruct}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MAX_INPUT_TOKENS: ${LLM_MAX_INPUT_TOKENS:-1000}
+      LLM_MAX_OUTPUT_TOKENS: ${LLM_MAX_OUTPUT_TOKENS:-150}
+    networks: [backend, egress]
+
+  # Тяжёлый образ и модель (~5 ГБ): поднимается только явно — docker compose --profile local-llm up.
+  llm_runtime:
+    image: ollama/ollama:0.40.4
+    profiles: ["local-llm"]
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [backend, egress]
+
+  fns_adapter:
+    <<: *stub
+    environment:
+      SERVICE_NAME: fns_adapter
+      FNS_API_TOKEN: ${FNS_API_TOKEN:-}
+    networks: [backend, egress]
+
+  expense_store:
+    <<: *stub
+    environment:
+      SERVICE_NAME: expense_store
+      DATABASE_URL: postgresql://${POSTGRES_USER:-rddh}:${POSTGRES_PASSWORD:-rddh}@expense_db:5432/${POSTGRES_DB:-rddh}
+      S3_ENDPOINT: http://receipt_files:8333
+      S3_BUCKET: ${S3_BUCKET:-receipts}
+    networks: [backend, data]
+    depends_on:
+      expense_db:
+        condition: service_healthy
+      receipt_files:
+        condition: service_healthy
+
+  expense_db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rddh}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rddh}
+      POSTGRES_DB: ${POSTGRES_DB:-rddh}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Применяется только при первом старте на пустом volume.
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [data]
+
+  receipt_files:
+    image: chrislusf/seaweedfs:4.45
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333"]
+    volumes:
+      - receipt-files:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8333/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    networks: [data]
+
+networks:
+  frontend:
+  backend:
+    internal: true
+  data:
+    internal: true
+  egress:
 
 volumes:
   db-data:
+  redis-data:
+  receipt-files:
+  ollama-models:
