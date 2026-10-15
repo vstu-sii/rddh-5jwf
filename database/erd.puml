@@ -1,0 +1,187 @@
+@startuml erd
+' ERD строится по database/schema.sql — при изменении схемы правится вместе с ней.
+hide circle
+hide methods
+skinparam linetype ortho
+skinparam class {
+    BackgroundColor #FDFDFD
+    BorderColor #555555
+    ArrowColor #555555
+}
+
+title RDDH — ERD (PostgreSQL)
+
+entity company {
+    * id : bigint <<PK>>
+    --
+    * name : text
+    * created_at : timestamptz
+}
+
+entity app_user {
+    * id : bigint <<PK>>
+    --
+    * company_id : bigint <<FK>>
+    * email : text <<UQ>>
+    * full_name : text
+    * role : user_role (employee | accountant)
+    * password_hash : text
+    * is_active : boolean
+    * created_at : timestamptz
+}
+
+entity expense_category {
+    * id : bigint <<PK>>
+    --
+    * company_id : bigint <<FK>>
+    parent_id : bigint <<FK>>
+    * code : text <<UQ company_id+code>>
+    * name : text
+    * is_reimbursable : boolean
+    monthly_limit_kopecks : bigint
+    * is_active : boolean
+}
+
+entity merchant {
+    * id : bigint <<PK>>
+    --
+    * canonical_name : text <<UQ>>
+    inn : varchar(12)
+    default_category_id : bigint <<FK>>
+}
+
+entity merchant_alias {
+    * id : bigint <<PK>>
+    --
+    * merchant_id : bigint <<FK>>
+    * raw_name : text <<UQ>>
+    * confirmed : boolean
+}
+
+entity expense {
+    * id : bigint <<PK>>
+    --
+    * company_id : bigint <<FK>>
+    * employee_id : bigint <<FK>>
+    * status : expense_status
+    merchant_raw : text
+    merchant_id : bigint <<FK>>
+    amount_kopecks : bigint
+    purchased_at : timestamptz
+    * payment_method : payment_method
+    fiscal_fn / fiscal_fd / fiscal_fp : varchar <<UQ>>
+    category_id : bigint <<FK>>
+    is_reimbursable : boolean
+    confidence : numeric(4,3)
+    * needs_review : boolean
+    review_reason : text
+    employee_comment : text
+    duplicate_of : bigint <<FK>>
+    * no_receipt : boolean
+    rejection_reason : text
+    decided_by : bigint <<FK>>
+    submitted_at / flagged_at / decided_at : timestamptz
+    * created_at / updated_at : timestamptz
+}
+
+entity expense_item {
+    * id : bigint <<PK>>
+    --
+    * expense_id : bigint <<FK>>
+    * name : text
+    * quantity : numeric(12,3)
+    * price_kopecks : bigint
+    * amount_kopecks : bigint
+    vat_rate : varchar(8)
+    category_id : bigint <<FK>>
+    is_reimbursable : boolean
+}
+
+entity receipt_file {
+    * id : bigint <<PK>>
+    --
+    * expense_id : bigint <<FK>>
+    * kind : receipt_kind (photo | pdf)
+    * storage_key : text <<UQ>>
+    * mime_type : text
+    * sha256 : char(64)
+    * bytes_original : bigint
+    * bytes_stored : bigint (<= 5 MB)
+    * uploaded_at : timestamptz
+}
+
+entity recognition_run {
+    * id : bigint <<PK>>
+    --
+    * expense_id : bigint <<FK>>
+    receipt_file_id : bigint <<FK>>
+    rerun_of : bigint <<FK>>
+    * source : recognition_source (qr | pdf_text | ocr | manual)
+    llm_provider / llm_model / prompt_version : text
+    tokens_in / tokens_out : integer
+    cost_kopecks : numeric(12,4)
+    t_ocr_ms / t_extract_ms / t_classify_ms / t_total_ms : integer
+    json_valid : boolean
+    * degraded : boolean
+    error : text
+    raw_result : jsonb
+    * created_at : timestamptz
+}
+
+entity expense_status_log {
+    * id : bigint <<PK>>
+    --
+    * expense_id : bigint <<FK>>
+    from_status : expense_status
+    * to_status : expense_status
+    actor_id : bigint <<FK>>
+    * actor_kind : text (employee | accountant | system)
+    comment : text
+    * at : timestamptz
+}
+
+entity registry {
+    * id : bigint <<PK>>
+    --
+    * company_id : bigint <<FK>>
+    * period_start / period_end : date <<UQ company_id+period>>
+    * status : registry_status (draft | sent | approved | paid)
+    * total_kopecks : bigint
+    * created_by : bigint <<FK>>
+    * created_at : timestamptz
+    sent_at : timestamptz
+}
+
+entity registry_item {
+    * registry_id : bigint <<PK, FK>>
+    * expense_id : bigint <<PK, FK>>
+    --
+    * included : boolean
+    * amount_kopecks : bigint
+    exclusion_reason : text
+}
+
+company ||--o{ app_user
+company ||--o{ expense_category
+company ||--o{ expense
+company ||--o{ registry
+expense_category |o--o{ expense_category : parent
+expense_category |o--o{ merchant : default
+merchant ||--o{ merchant_alias
+app_user ||--o{ expense : employee
+app_user |o--o{ expense : decided_by
+merchant |o--o{ expense
+expense_category |o--o{ expense
+expense |o--o{ expense : duplicate_of
+expense ||--o{ expense_item
+expense_category |o--o{ expense_item
+expense ||--o{ receipt_file
+expense ||--o{ recognition_run
+receipt_file |o--o{ recognition_run
+recognition_run |o--o{ recognition_run : rerun_of
+expense ||--o{ expense_status_log
+app_user |o--o{ expense_status_log : actor
+app_user ||--o{ registry : created_by
+registry ||--o{ registry_item
+expense ||--o{ registry_item
+@enduml

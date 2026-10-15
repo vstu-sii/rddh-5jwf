@@ -1,0 +1,111 @@
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --text: #1c1f24;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --brand: #2f5bea;
+  --brand-soft: #e8eefe;
+  --ok: #157a4a;
+  --ok-soft: #e3f4ea;
+  --warn: #9a6100;
+  --warn-soft: #fdf1dc;
+  --bad: #b42318;
+  --bad-soft: #fde8e6;
+  --radius: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--text);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); font-size: 15px; line-height: 1.4; }
+h1, h2, h3 { margin: 0; }
+button { font: inherit; cursor: pointer; }
+a { color: var(--brand); }
+
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.mono { font-variant-numeric: tabular-nums; }
+.row { display: flex; align-items: center; gap: 10px; }
+.spread { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stack > * + * { margin-top: 12px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 10px; padding: 10px 14px; font-weight: 600; }
+.btn-primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn-danger { background: var(--surface); border-color: var(--bad); color: var(--bad); }
+.btn-block { width: 100%; padding: 13px; }
+
+.badge { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.b-ok { background: var(--ok-soft); color: var(--ok); }
+.b-warn { background: var(--warn-soft); color: var(--warn); }
+.b-bad { background: var(--bad-soft); color: var(--bad); }
+.b-info { background: var(--brand-soft); color: var(--brand); }
+.b-gray { background: #eef0f3; color: #4b5563; }
+
+.banner { border-radius: 12px; padding: 12px 14px; font-size: 14px; }
+.banner-warn { background: var(--warn-soft); color: #5c3b00; }
+.banner-bad { background: var(--bad-soft); color: #7a1a12; }
+.banner-info { background: var(--brand-soft); color: #1d3a99; }
+
+/* ---------- Мобильное приложение сотрудника ---------- */
+.phone { max-width: 400px; min-height: 100vh; margin: 0 auto; background: var(--bg); display: flex; flex-direction: column; }
+.topbar { background: var(--surface); border-bottom: 1px solid var(--line); padding: 14px 16px; position: sticky; top: 0; z-index: 2; }
+.topbar h1 { font-size: 18px; }
+.content { padding: 14px 16px 90px; flex: 1; }
+.tabbar { position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; padding: 8px 0 12px; }
+.tabbar a { color: var(--muted); text-decoration: none; font-size: 12px; }
+.tabbar a.active { color: var(--brand); font-weight: 600; }
+.tabbar .ico { display: block; font-size: 20px; line-height: 1.2; }
+
+.expense { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; }
+.cat-ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--brand-soft); font-size: 18px; }
+.amount { font-weight: 700; }
+
+.drop { border: 2px dashed #c7cfdc; border-radius: var(--radius); padding: 22px 16px; text-align: center; background: var(--surface); }
+.drop .big { font-size: 34px; }
+.choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.choice .card { text-align: center; padding: 18px 10px; }
+
+.field { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.field:last-child { border-bottom: 0; }
+.field .label { font-size: 12px; color: var(--muted); grid-column: 1 / -1; }
+.field .value { font-weight: 600; }
+.field.low .value { color: var(--warn); }
+.field input { font: inherit; font-weight: 600; border: 1px solid #f0c36d; background: #fffaf0; border-radius: 8px; padding: 6px 8px; width: 100%; }
+
+.receipt-thumb { height: 120px; border-radius: 10px; background: repeating-linear-gradient(0deg, #fff, #fff 9px, #eef0f3 10px); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+
+.timeline { list-style: none; margin: 0; padding: 0; }
+.timeline li { position: relative; padding: 0 0 16px 24px; }
+.timeline li::before { content: ""; position: absolute; left: 5px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); }
+.timeline li::after { content: ""; position: absolute; left: 9px; top: 16px; bottom: 0; width: 2px; background: var(--line); }
+.timeline li:last-child::after { display: none; }
+.timeline li.done::before { background: var(--ok); }
+.timeline li.pending::before { background: #c7cfdc; }
+
+/* ---------- Кабинет бухгалтера ---------- */
+.desk { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.side { background: #141a2a; color: #cfd6e6; padding: 20px 14px; }
+.side .logo { color: #fff; font-weight: 800; font-size: 18px; margin-bottom: 22px; }
+.side a { display: flex; justify-content: space-between; color: #cfd6e6; text-decoration: none; padding: 9px 10px; border-radius: 8px; margin-bottom: 4px; }
+.side a.active { background: #26304a; color: #fff; }
+.main { padding: 24px 28px; }
+.main h1 { font-size: 22px; margin-bottom: 4px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+.kpi .num { font-size: 22px; font-weight: 700; }
+table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 14px; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; background: #fafbfc; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; }
+.split { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; }
+.reason-box textarea { width: 100%; min-height: 80px; font: inherit; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.reason-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.chip { border: 1px solid var(--line); background: #fafbfc; border-radius: 999px; padding: 4px 10px; font-size: 12px; }
+.total-row td { font-weight: 700; background: #fafbfc; }
+
+/* ---------- Карта экранов ---------- */
+.map { max-width: 880px; margin: 0 auto; padding: 32px 20px; }
+.map ul { padding-left: 18px; }
+.map li { margin: 6px 0; }
