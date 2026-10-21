@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RDDH — приложение сотрудника (прототип)</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="phone">
+  <header class="topbar"><div class="spread"><h1 id="title"></h1><span class="small muted" id="who"></span></div></header>
+  <main class="content" id="screen"></main>
+  <nav class="tabbar">
+    <a href="#list" data-tab="list"><span class="ico">🧾</span>Расходы</a>
+    <a href="#upload" data-tab="upload"><span class="ico">➕</span>Добавить</a>
+    <a href="#status" data-tab="status"><span class="ico">🔔</span>Статусы</a>
+  </nav>
+</div>
+
+<script src="data.js"></script>
+<script>
+  const D = window.RDDH;
+  const badge = (s) => `<span class="badge ${D.statuses[s].cls}">${D.statuses[s].label}</span>`;
+
+  const screens = {
+    list: {
+      title: "Мои расходы",
+      render: () => {
+        const draft = D.expenses.filter((e) => e.status === "recognized").length;
+        return `
+          <div class="stack">
+            <div class="banner banner-warn">
+              <b>До конца периода ${D.period.daysLeft} дн.</b> (${D.period.deadline}).
+              ${draft ? `${draft} расход ждёт вашей проверки — после дедлайна компенсация за него сгорит.` : ""}
+            </div>
+            ${D.expenses.map((e) => `
+              <a class="card expense" href="${e.status === "recognized" ? "#review" : "#status"}" style="text-decoration:none;color:inherit">
+                <div class="cat-ico">${e.icon}</div>
+                <div>
+                  <div><b>${e.merchant}</b></div>
+                  <div class="small muted">${e.category} · ${e.date} · ${e.source}</div>
+                  ${e.reason ? `<div class="small" style="margin-top:4px">${e.reason}</div>` : ""}
+                </div>
+                <div style="text-align:right">
+                  <div class="amount mono">${rub(e.amount)}</div>
+                  <div style="margin-top:4px">${badge(e.status)}</div>
+                </div>
+              </a>`).join("")}
+          </div>`;
+      },
+    },
+
+    upload: {
+      title: "Новый расход",
+      render: () => `
+        <div class="stack">
+          <div class="drop">
+            <div class="big">📷</div>
+            <div><b>Сфотографируйте чек</b></div>
+            <div class="small muted">Положите чек на тёмный фон, QR-код должен попасть в кадр</div>
+          </div>
+          <div class="choice">
+            <div class="card"><div style="font-size:24px">📄</div><b>PDF онлайн-чека</b><div class="small muted">из почты или «Файлов»</div></div>
+            <div class="card"><div style="font-size:24px">🖼️</div><b>Из галереи</b><div class="small muted">фото, снятое раньше</div></div>
+          </div>
+          <div class="banner banner-bad">
+            <b>Не удалось прочитать сумму.</b> Фото слишком тёмное — переснимите при свете, остальные поля уже распознаны.
+          </div>
+          <button class="btn btn-block">Переснять</button>
+          <p class="small muted">Фото и PDF обрабатываются одинаково. Распознавание занимает до 5 секунд — поля можно поправить перед отправкой.</p>
+        </div>`,
+    },
+
+    review: {
+      title: "Проверьте поля",
+      render: () => {
+        const r = D.review;
+        return `
+          <div class="stack">
+            <div class="receipt-thumb">фото чека · нажмите, чтобы увеличить</div>
+            <div class="card">
+              <div class="field"><span class="label">Продавец</span><span class="value">${r.merchant}</span><span class="small muted">в чеке: ${r.merchant_raw}</span></div>
+              <div class="field"><span class="label">Дата и время</span><span class="value">${r.date}</span></div>
+              <div class="field low"><span class="label">Итого — проверьте, распознано неуверенно</span>
+                <input value="${r.total} ₽" aria-label="Итого"></div>
+              <div class="field"><span class="label">Оплата</span><span class="value">${r.payment}</span></div>
+            </div>
+            <div class="card">
+              <div class="spread"><b>Позиции и категории</b><span class="badge b-warn">уверенность ${Math.round(r.confidence * 100)}%</span></div>
+              ${r.items.map((i) => `
+                <div class="field">
+                  <span class="label">${i.category}</span>
+                  <span class="value">${i.name}</span>
+                  <span class="mono">${rub(i.amount)}</span>
+                  <span class="small" style="grid-column:1/-1;color:${i.ok ? "var(--ok)" : "var(--bad)"}">${i.ok ? "✓ подходит под политику" : "✗ не компенсируется — исключим из заявки"}</span>
+                </div>`).join("")}
+            </div>
+            <div class="banner banner-info">К компенсации: <b>${rub(r.items.filter((i) => i.ok).reduce((s, i) => s + i.amount, 0))}</b> из ${rub(r.total)}. Окончательное решение примет бухгалтер.</div>
+            <button class="btn btn-primary btn-block">Отправить на компенсацию</button>
+          </div>`;
+      },
+    },
+
+    status: {
+      title: "Статус заявки",
+      render: () => {
+        const e = D.expenses.find((x) => x.id === 102);
+        return `
+          <div class="stack">
+            <div class="card">
+              <div class="spread"><b>${e.merchant}</b><span class="amount mono">${rub(e.amount)}</span></div>
+              <div class="small muted">${e.category} · ${e.date} · ${e.source}</div>
+              <div style="margin-top:8px">${badge(e.status)}</div>
+            </div>
+            <div class="banner banner-warn"><b>Почему на проверке:</b> ${e.reason}.</div>
+            <div class="card">
+              <ul class="timeline">
+                ${D.statusLog.map((s) => `<li class="${s.state}"><div><b>${s.text}</b></div><div class="small muted">${s.at} · ${s.actor}</div></li>`).join("")}
+              </ul>
+            </div>
+            <p class="small muted">Писать в бухгалтерию не нужно — решение и причина появятся здесь.</p>
+          </div>`;
+      },
+    },
+  };
+
+  function show() {
+    const key = (location.hash || "#list").slice(1);
+    const s = screens[key] || screens.list;
+    document.getElementById("title").textContent = s.title;
+    document.getElementById("who").textContent = D.employee.name;
+    document.getElementById("screen").innerHTML = s.render();
+    document.querySelectorAll(".tabbar a").forEach((a) => a.classList.toggle("active", a.dataset.tab === key || (key === "review" && a.dataset.tab === "list")));
+  }
+  window.addEventListener("hashchange", show);
+  show();
+</script>
+</body>
+</html>

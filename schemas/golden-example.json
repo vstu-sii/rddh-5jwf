@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vstu-sii/rddh-5jwf/schemas/golden-example.json",
+  "title": "Golden dataset example (RDDH)",
+  "description": "Одна строка JSONL golden-набора: вход (фото/PDF/смешанная загрузка), эталон (категория, вердикт) и метаданные прогона. Формат читается scripts/quality/check_golden.py и scripts/quality/run_evals.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "source", "version", "input", "reference", "meta"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^gs-[0-9]{3}$",
+      "description": "Уникальный идентификатор записи, gs-NNN"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 3,
+      "description": "Происхождение: synthetic_*, interview_*, bank_pdf_*"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "description": "Дата сбора/генерации, ISO"
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "merchant_raw", "amount", "date"],
+      "properties": {
+        "type": {
+          "enum": ["receipt_photo", "receipt_pdf", "mixed_batch"],
+          "description": "Канал входа. mixed_batch разворачивается в отдельные расходы по типу файла (SC-02)"
+        },
+        "file_ref": {
+          "type": "string",
+          "description": "Путь к обезличенному оригиналу вне публичного репозитория"
+        },
+        "ocr_text": {
+          "type": "string",
+          "description": "Сырой текст OCR, включая ошибки распознавания"
+        },
+        "pdf_text": {
+          "type": "string",
+          "description": "Текстовый слой PDF; пустая строка, если слоя нет"
+        },
+        "merchant_raw": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Имя продавца как пришло из документа (SC-05)"
+        },
+        "amount": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Сумма расхода в рублях"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}(:[0-9]{2})?)?$",
+          "description": "Дата покупки, ISO 8601"
+        },
+        "payment_method": { "enum": ["cash", "card", "sbp", "unknown"] },
+        "items": {
+          "type": "array",
+          "description": "Позиции чека; нужны для смешанных чеков (SC-13, SC-18)",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "amount"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "amount": { "type": "number", "minimum": 0 },
+              "category": { "type": "string" },
+              "is_reimbursable": { "type": "boolean" }
+            }
+          }
+        },
+        "fiscal": {
+          "type": "object",
+          "description": "Фискальные реквизиты из QR (54-ФЗ): ключ дедупликации",
+          "additionalProperties": false,
+          "properties": {
+            "fn": { "type": "string" },
+            "fd": { "type": "string" },
+            "fp": { "type": "string" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "receipt_pdf" } }, "required": ["type"] },
+          "then": { "required": ["pdf_text"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "receipt_photo" } }, "required": ["type"] },
+          "then": { "required": ["ocr_text"] }
+        }
+      ]
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["merchant_canonical", "category", "reimbursable", "confidence"],
+      "properties": {
+        "merchant_canonical": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Каноническое имя продавца (SC-04)"
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Эталонная категория; должна существовать в справочнике политики"
+        },
+        "subcategory": { "type": "string" },
+        "vat_rate": { "type": "string" },
+        "reimbursable": {
+          "type": "boolean",
+          "description": "Эталонный вердикт по политике (SC-13)"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Уверенность эталона; < 0.9 требует notes"
+        },
+        "needs_review": {
+          "type": "boolean",
+          "description": "Эталон: расход обязан уйти бухгалтеру (SC-11)"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Почему такая категория и вердикт; обязательна при confidence < 0.9"
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["segment", "company_id", "uc_id"],
+      "properties": {
+        "segment": { "const": "employee_expense_reimbursement" },
+        "company_id": {
+          "type": "string",
+          "description": "Псевдоним компании: политика у каждой своя (SC-14)"
+        },
+        "employee_id": { "type": "string" },
+        "uc_id": {
+          "type": "string",
+          "pattern": "^UC-[0-9]{2}$",
+          "description": "Use case, который покрывает запись (трассировка DoD P-04)"
+        },
+        "pain_ref": {
+          "type": "string",
+          "description": "Боль из PRD (docs/prd.md), которую иллюстрирует запись. Номер обязан совпадать с номером боли в PRD: 1 — качество фото, 2 — формат PDF, 3 — неясна компенсируемость, 4 — пропущенный дедлайн, 5 — нет видимости статуса.",
+          "enum": [
+            "pain_1_photo_quality",
+            "pain_2_pdf_format",
+            "pain_3_unclear_eligibility",
+            "pain_4_missed_deadline",
+            "pain_5_no_status_visibility"
+          ]
+        },
+        "scenario_ref": {
+          "type": "string",
+          "description": "Сценарий, который набор проверяет, но который не является болью PRD (например, спорная категория или устойчивость к инъекции). Отдельное поле, потому что приписывать такие кейсы номеру боли PRD — значит портить трассировку.",
+          "enum": [
+            "scenario_contested_category",
+            "scenario_prompt_injection",
+            "scenario_duplicate_expense",
+            "scenario_multi_company_policy",
+            "scenario_mixed_receipt"
+          ]
+        },
+        "capture_condition": {
+          "enum": ["clear", "angled", "overexposed", "low_contrast", "partial", "not_applicable"],
+          "description": "Условие съёмки для фото"
+        },
+        "edge_case": {
+          "enum": [
+            "none",
+            "unreadable_photo",
+            "pdf_no_text_layer",
+            "mixed_receipt",
+            "duplicate",
+            "no_receipt",
+            "unknown_merchant",
+            "non_reimbursable_category"
+          ],
+          "description": "Краевой случай (трассировка DoD Q-04)"
+        },
+        "expected_context": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Документы политики, на которые обязан опираться ответ (кейсы на контекст, а не на текст)"
+        },
+        "injected_text": {
+          "type": "string",
+          "description": "Текст prompt injection внутри документа; пусто, если атаки нет (LLM01)"
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Метки прогона, нужные SC-09/SC-11/SC-15/SC-19/SC-20",
+      "properties": {
+        "submitted_at": { "type": "string" },
+        "in_registry_at": { "type": "string" },
+        "flagged_at": { "type": "string" },
+        "decided_at": { "type": "string" },
+        "status_final": {
+          "enum": ["in_registry", "rejected", "reimbursed", "no_receipt"]
+        },
+        "rejection_reason": { "type": ["string", "null"] },
+        "status_log": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["at", "to", "actor"],
+            "properties": {
+              "at": { "type": "string" },
+              "from": { "type": ["string", "null"] },
+              "to": { "type": "string" },
+              "actor": { "type": "string" }
+            }
+          }
+        },
+        "rerun_of": { "type": ["string", "null"] },
+        "no_receipt": { "type": "boolean" }
+      }
+    }
+  }
+}

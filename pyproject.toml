@@ -1,6 +1,8 @@
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Ноутбуки экспериментов и спайков — одноразовый код, под стандарты продакшен-кода не подпадают.
+extend-exclude = ["docs/experiments"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]

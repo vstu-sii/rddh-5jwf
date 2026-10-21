@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RDDH — кабинет бухгалтера (прототип)</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="desk">
+  <aside class="side">
+    <div class="logo">RDDH</div>
+    <a href="#queue" data-tab="queue">Спорные <span class="badge b-warn" id="qcount"></span></a>
+    <a href="#decision" data-tab="decision">Карточка расхода</a>
+    <a href="#registry" data-tab="registry">Реестр</a>
+  </aside>
+  <main class="main" id="screen"></main>
+</div>
+
+<script src="data.js"></script>
+<script>
+  const D = window.RDDH;
+  const conf = (c) => `<span class="badge ${c >= 0.85 ? "b-ok" : c >= 0.6 ? "b-warn" : "b-bad"}">${Math.round(c * 100)}%</span>`;
+
+  const screens = {
+    queue: () => `
+      <h1>Спорные расходы</h1>
+      <div class="muted">${D.period.label} · каждый помечен системой на входе — с причиной и основанием</div>
+      <div class="kpis">
+        <div class="card kpi"><div class="small muted">Подано за период</div><div class="num">64</div></div>
+        <div class="card kpi"><div class="small muted">Прошли автоматически</div><div class="num">52 <span class="small muted">81%</span></div></div>
+        <div class="card kpi"><div class="small muted">Ждут решения</div><div class="num">${D.queue.length}</div></div>
+        <div class="card kpi"><div class="small muted">Медиана до решения</div><div class="num">1,6 д.</div></div>
+      </div>
+      <table>
+        <thead><tr><th>Сотрудник</th><th>Продавец</th><th>Категория</th><th class="num">Сумма</th><th>Уверенность</th><th>Почему спорный</th><th>Ждёт</th></tr></thead>
+        <tbody>
+          ${D.queue.map((q) => `
+            <tr onclick="location.hash='#decision'" style="cursor:pointer">
+              <td>${q.employee}</td>
+              <td><b>${q.merchant}</b><div class="small muted">в документе: ${q.raw}</div></td>
+              <td>${q.category}</td>
+              <td class="num mono">${rub(q.amount)}</td>
+              <td>${conf(q.confidence)}</td>
+              <td>${q.reason}<div class="small muted">${q.basis}</div></td>
+              <td>${q.waiting}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`,
+
+    decision: () => {
+      const q = D.queue[1];
+      return `
+        <h1>Расход #${q.id} · ${q.employee}</h1>
+        <div class="muted">Загружен 06.10 19:40 · фото · распознан за 2,9 с</div>
+        <div class="split" style="margin-top:16px">
+          <div class="stack">
+            <div class="receipt-thumb" style="height:260px">оригинал чека (фото)</div>
+            <div class="card">
+              <div class="field"><span class="label">Продавец</span><span class="value">${q.merchant}</span><span class="small muted">в документе: ${q.raw}</span></div>
+              <div class="field"><span class="label">Дата</span><span class="value">06.10.2026 19:12</span></div>
+              <div class="field"><span class="label">Итого</span><span class="value mono">${rub(q.amount)}</span></div>
+              <div class="field"><span class="label">ФН / ФД / ФП</span><span class="value mono small">9999078900012345 / 48211 / 2981735540</span></div>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="banner banner-warn"><b>Система пометила спорным:</b> ${q.reason}. Основание: ${q.basis}.</div>
+            <table>
+              <thead><tr><th>Позиция</th><th>Категория</th><th class="num">Сумма</th><th>Политика</th></tr></thead>
+              <tbody>
+                <tr><td>Абонемент «Безлимит» 1 мес.</td><td>Фитнес</td><td class="num mono">3 000 ₽</td><td><span class="badge b-ok">компенсируется</span></td></tr>
+                <tr><td>Массаж спины 30 мин</td><td>Массаж</td><td class="num mono">1 500 ₽</td><td><span class="badge b-bad">вне политики</span></td></tr>
+              </tbody>
+            </table>
+            <div class="card reason-box">
+              <b>Решение</b>
+              <div class="small muted">Причина обязательна — её увидит сотрудник</div>
+              <div class="reason-chips">
+                <span class="chip">Вне политики</span><span class="chip">Нечитаемый документ</span><span class="chip">Дубль</span><span class="chip">Превышен лимит</span>
+              </div>
+              <textarea>Компенсируем абонемент 3 000 ₽. Массаж не входит в программу (п. 2.5 политики).</textarea>
+              <div class="row" style="margin-top:10px">
+                <button class="btn btn-primary">Одобрить частично · 3 000 ₽</button>
+                <button class="btn">Одобрить всё</button>
+                <button class="btn btn-danger">Отклонить</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    },
+
+    registry: () => {
+      const r = D.registry;
+      const total = r.included.reduce((s, i) => s + i.amount, 0);
+      return `
+        <div class="spread"><div><h1>Реестр на выплату</h1><div class="muted">${r.period}</div></div>
+          <div class="row"><button class="btn">Выгрузить XLSX</button><button class="btn btn-primary">Передать на выплату</button></div></div>
+        <div class="banner banner-info" style="margin:16px 0">Сумма реестра сверена с включёнными расходами: расхождение <b>0 ₽</b>. Все исключённые позиции имеют причину.</div>
+        <h3 style="margin:8px 0">Включено · ${r.included.length}</h3>
+        <table>
+          <thead><tr><th>Сотрудник</th><th>Продавец</th><th>Категория</th><th class="num">Сумма</th></tr></thead>
+          <tbody>
+            ${r.included.map((i) => `<tr><td>${i.employee}</td><td>${i.merchant}</td><td>${i.category}</td><td class="num mono">${rub(i.amount)}</td></tr>`).join("")}
+            <tr class="total-row"><td colspan="3">Итого к выплате</td><td class="num mono">${rub(total)}</td></tr>
+          </tbody>
+        </table>
+        <h3 style="margin:20px 0 8px">Исключено · ${r.excluded.length}</h3>
+        <table>
+          <thead><tr><th>Сотрудник</th><th>Продавец</th><th class="num">Сумма</th><th>Причина исключения</th></tr></thead>
+          <tbody>${r.excluded.map((i) => `<tr><td>${i.employee}</td><td>${i.merchant}</td><td class="num mono">${rub(i.amount)}</td><td>${i.reason}</td></tr>`).join("")}</tbody>
+        </table>`;
+    },
+  };
+
+  function show() {
+    const key = (location.hash || "#queue").slice(1);
+    document.getElementById("screen").innerHTML = (screens[key] || screens.queue)();
+    document.getElementById("qcount").textContent = D.queue.length;
+    document.querySelectorAll(".side a").forEach((a) => a.classList.toggle("active", a.dataset.tab === key));
+  }
+  window.addEventListener("hashchange", show);
+  show();
+</script>
+</body>
+</html>

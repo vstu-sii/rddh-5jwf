@@ -1,0 +1,50 @@
+@startuml c4-container
+!include <C4/C4_Container>
+
+title RDDH — компенсация расходов сотрудников: C4 Level 2 (Container)
+
+Person(employee, "Сотрудник", "Подаёт чеки на компенсацию: фото или PDF онлайн-чека")
+Person(accountant, "Бухгалтер", "Разбирает спорные расходы, формирует реестр на выплату")
+
+System_Boundary(rddh, "RDDH") {
+    Container(employee_app, "Приложение сотрудника", "PWA, React", "Загрузка чека, подтверждение распознанных полей, статусы заявок")
+    Container(backoffice_web, "Кабинет бухгалтера", "SPA, React", "Очередь спорных расходов, решения с причиной, реестр за период")
+    Container(api, "Backend API", "Python, FastAPI", "Учётные записи, заявки, статусы и их история, политика категорий, реестр")
+    ContainerQueue(task_queue, "Очередь распознавания", "Redis", "Задачи на распознавание загруженных чеков")
+    Container(recognition_worker, "Конвейер распознавания", "Python", "QR/текст PDF/OCR → извлечение полей → категоризация → проверка схемы ответа")
+    Container(ocr_service, "OCR", "Python, PaddleOCR (ru)", "Текст и confidence по фото чека")
+    Container(llm_adapter, "LLM-адаптер", "Python", "Единый интерфейс categorize(): выбор провайдера, лимиты бюджета, деградация на правила", $tags="acl")
+    Container(llm_runtime, "Локальная LLM", "Ollama, Qwen2.5-7B-Instruct", "Нормализация продавца и выбор категории из словаря политики")
+    Container(fns_adapter, "ФНС-адаптер", "Python", "Получение фискальных реквизитов чека по данным QR", $tags="acl")
+    Container(expense_store, "Хранилище расходов", "Python", "Единственный владелец данных: CRUD расходов, позиций, реестров и файлов чеков", $tags="repo")
+    ContainerDb(expense_db, "БД расходов", "PostgreSQL 16", "Расходы, позиции чека, история статусов, реестры, прогоны распознавания")
+    ContainerDb(receipt_files, "Файлы чеков", "SeaweedFS (S3 API)", "Оригиналы фото и PDF чеков")
+}
+
+System_Ext(cloud_llm, "Облачный LLM-провайдер", "GPT-5 mini / GigaChat 2 Lite — резерв при недоступности локальной модели")
+System_Ext(fns_api, "ФНС «Проверка чека»", "API фискальных данных по QR-коду чека")
+
+Rel(employee, employee_app, "Фотографирует или загружает чек, смотрит статус")
+Rel(accountant, backoffice_web, "Принимает решения, формирует реестр")
+
+Rel(employee_app, api, "Заявки, файлы, статусы", "HTTPS, JSON")
+Rel(backoffice_web, api, "Спорные расходы, решения, реестр", "HTTPS, JSON")
+
+Rel(api, expense_store, "Читает и пишет расходы, файлы", "HTTP, JSON")
+Rel(api, task_queue, "Ставит задачу распознавания", "Redis protocol")
+
+Rel(recognition_worker, task_queue, "Забирает задачи", "Redis protocol")
+Rel(recognition_worker, expense_store, "Читает файл, сохраняет результат распознавания", "HTTP, JSON")
+Rel(recognition_worker, ocr_service, "Распознаёт фото", "HTTP, JSON")
+Rel(recognition_worker, fns_adapter, "Запрашивает реквизиты по QR", "HTTP, JSON")
+Rel(recognition_worker, llm_adapter, "categorize(merchant, items, policy)", "HTTP, JSON")
+
+Rel(llm_adapter, llm_runtime, "Промпт со строгой JSON-схемой", "HTTP, OpenAI-compatible API")
+Rel(llm_adapter, cloud_llm, "Резервный вызов при деградации", "HTTPS")
+Rel(fns_adapter, fns_api, "Проверка чека", "HTTPS")
+
+Rel(expense_store, expense_db, "SQL", "PostgreSQL protocol")
+Rel(expense_store, receipt_files, "Объекты чеков", "S3 API")
+
+SHOW_LEGEND()
+@enduml
