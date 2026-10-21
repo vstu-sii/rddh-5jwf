@@ -30,11 +30,14 @@
 │   ├── erd.puml             # ERD
 │   └── migrations/          # Правила миграций
 ├── tests/                   # Тесты
+├── scripts/quality/         # Проверки DoD, валидатор golden dataset, раннер evals
+├── schemas/                 # JSON-схемы: golden-запись и ответ LLM
+├── prompts/                 # Версионированные промпты (categorize.v1.md)
 ├── docs/
 │   ├── architecture/        # C4 (context, container) в PlantUML + отрендеренные SVG
 │   ├── adr/                 # Архитектурные решения с ценой решения
-│   ├── quality/             # Критерии успеха, golden dataset, DoD
-│   └── ...                  # PRD, ресёрч, модели, эксперименты, деплой
+│   ├── quality/             # DoD, golden dataset, тест-план, модель угроз
+│   └── ...                  # PRD, use cases, ресёрч, модели, эксперименты, деплой
 ├── .github/
 │   ├── workflows/ci.yml     # CI: lint, format, test, aact, schema, build, compose
 │   └── PULL_REQUEST_TEMPLATE.md
@@ -89,6 +92,23 @@ pytest
 ruff check .
 ruff format --check .
 ```
+
+## Качество и безопасность
+
+Артефакты роли Quality & Safety: [DoD команды](docs/quality/dod.md), [golden dataset](docs/quality/golden-dataset/README.md), [тест-план](docs/quality/test-plan.md), [модель угроз](docs/quality/threat-model.md).
+
+Все проверки запускаются одной командой и возвращают exit code (0 — можно мёржить):
+
+```bash
+pip install jsonschema pyyaml   # нужны для полной валидации
+
+python scripts/quality/check_dod.py            # все критерии DoD
+python scripts/quality/check_dod.py --ci      # только блокирующие мёрж
+python scripts/quality/check_golden.py docs/quality/golden-dataset/v1.jsonl
+python scripts/quality/run_evals.py --dataset docs/quality/golden-dataset/v1.jsonl --provider baseline
+```
+
+Первые три гоняются в CI на каждый PR (джобы `quality` и `evals-smoke`), поэтому «зелёный CI» означает в том числе, что golden dataset валиден и критерии DoD выполнены.
 
 ## Ветвление и Pull Request
 

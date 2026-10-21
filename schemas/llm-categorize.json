@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vstu-sii/rddh-5jwf/schemas/llm-categorize.json",
+  "title": "Ответ LLM-адаптера categorize() (RDDH)",
+  "description": "Строгий контракт ответа модели. Всё, что не проходит эту схему, помечается degraded и не попадает в расход как категория (ADR-0003, threat-model §3). Модель НЕ возвращает сумму, дату и вердикт — эти поля берутся из OCR/QR и правил политики.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["merchant_canonical", "category", "confidence", "needs_review"],
+  "properties": {
+    "merchant_canonical": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Нормализованное имя продавца. Исходная строка merchant_raw сохраняется рядом отдельно (SC-05) и моделью не перезаписывается."
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "Категория СТРОГО из справочника политики компании, переданного в промпте. Категория вне справочника отбрасывается приложением (SC-14, Q-03) — схема это допускает, проверка живёт в llm_adapter, потому что справочник зависит от company_id."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Уверенность модели в категории. Используется как вход для порога 0.85 (PRD), но НЕ как разрешение: расходам со значение ниже порога выставляется needs_review=true независимо от того, что модель написала."
+    },
+    "needs_review": {
+      "type": "boolean",
+      "description": "Модель просит ручную проверку. Приложение выставляет этот флаг по своим правилам и НЕ может его снять по просьбе модели (опасное направление — только false→true)."
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Короткое объяснение для бухгалтера (SC-12). Отображается как текст, не как разметка (LLM02)."
+    },
+    "policy_ref": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Ссылка на пункт политики, на который опирается решение. Нужна для проверки кейсов на контекст (meta.expected_context): если модель не может назвать основание — она не опиралась на политику."
+    },
+    "top2": {
+      "type": "array",
+      "maxItems": 2,
+      "items": { "type": "string", "maxLength": 120 },
+      "description": "Альтернативные категории для подсказки (SC-07, точность Top-2)."
+    }
+  }
+}

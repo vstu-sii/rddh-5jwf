@@ -28,6 +28,53 @@ jobs:
       - name: Test (pytest)
         run: pytest
 
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install quality dependencies
+        run: pip install jsonschema pyyaml
+
+      - name: Golden dataset (DoD Q-01…Q-08)
+        run: python scripts/quality/check_golden.py docs/quality/golden-dataset/v1.jsonl
+
+      - name: DoD артефактов (блокирующие критерии)
+        run: python scripts/quality/check_dod.py --ci -v
+
+  evals-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install quality dependencies
+        run: pip install jsonschema pyyaml
+
+      # Быстрый срез: набор целиком на офлайн-провайдере. Полный прогон на
+      # реальной модели — ночная задача (docs/quality/test-plan.md §4.2).
+      - name: Evals (baseline provider)
+        run: |
+          python scripts/quality/run_evals.py \
+            --dataset docs/quality/golden-dataset/v1.jsonl \
+            --provider baseline \
+            --report reports/evals-baseline.json
+
+      - name: Upload eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evals-baseline
+          path: reports/evals-baseline.json
+          if-no-files-found: warn
+
   architecture:
     runs-on: ubuntu-latest
     steps:
