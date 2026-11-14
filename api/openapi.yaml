@@ -1,0 +1,457 @@
+openapi: 3.1.0
+info:
+  title: RDDH AI Categorization API
+  version: 1.0.0
+  summary: Внутренний контракт AI-сервиса нормализации продавца и категоризации расходов.
+  description: |
+    Контракт внутреннего AI-сервиса MVP. Основная модель — локальная Qwen2.5-7B-Instruct.
+    Сервис получает уже извлечённые структурированные данные чека и контекст разрешённых
+    категорий конкретной компании.
+
+    Границы ответственности:
+    - API не принимает изображения/PDF и не выполняет OCR/QR/PDF extraction.
+    - API не извлекает и не назначает сумму или дату.
+    - API возвращает предложение категории, а не решение о компенсации.
+    - company_id определяется сервером из доверенного auth context и не принимается из тела запроса.
+    - Ответ модели валидируется по схеме и дополнительно проверяется детерминированными guardrails.
+servers:
+  - url: http://ai-service:8000
+    description: Внутренняя сеть / dev
+tags:
+  - name: Categorization
+    description: Нормализация продавца и предложение категории
+  - name: Health
+    description: Проверки состояния сервиса
+security:
+  - bearerAuth: []
+paths:
+  /v1/ai/categorize:
+    post:
+      tags: [Categorization]
+      operationId: categorizeExpense
+      summary: Нормализовать продавца и предложить категорию расхода
+      description: |
+        Один ограниченный вызов модели. Вход содержит минимально необходимые текстовые
+        и структурированные поля. allowed_categories предварительно загружается вызывающей
+        системой в tenant scope. Модель не вправе выбирать категорию вне этого списка.
+
+        При недостатке данных, смешанной корзине или неоднозначности модель должна вернуть
+        needs_review=true. Даже при needs_review=false результат остаётся предложением и
+        не означает одобрение расхода.
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategorizationRequest'
+            examples:
+              englishCourse:
+                summary: Чек за курс английского
+                value:
+                  request_id: 2d9b0d2e-4e3f-4f6f-9b90-4a2bfc3c50a1
+                  expense_id: exp_opaque_001
+                  policy_version: policy-v12
+                  merchant:
+                    raw: ООО Языковой центр Лингва
+                    parsed_candidate: Языковой центр Лингва
+                    source: ocr
+                    extraction_confidence: 0.96
+                  items:
+                    - description: Курс английского языка B1, 8 занятий
+                      amount_minor: 1200000
+                      currency: RUB
+                  context:
+                    transaction_description: Оплата курса английского языка
+                    input_type: receipt_photo
+                    extraction_status: complete
+                    quality_flags: []
+                  allowed_categories:
+                    - id: education
+                      name: Обучение
+                      description: Образовательные курсы и занятия
+                      subcategories:
+                        - id: english
+                          name: Английский язык
+      responses:
+        '200':
+          description: Предложение категории сформировано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategorizationResponse'
+              examples:
+                acceptedSuggestion:
+                  summary: Допустимое предложение категории
+                  value:
+                    result:
+                      merchant_canonical: Языковой центр Лингва
+                      category_id: education
+                      category: Обучение
+                      subcategory_id: english
+                      subcategory: Английский язык
+                      confidence: 0.91
+                      needs_review: false
+                      reason_code: category_match
+                      explanation: Описание позиции указывает на образовательный курс.
+                    meta:
+                      request_id: 2d9b0d2e-4e3f-4f6f-9b90-4a2bfc3c50a1
+                      correlation_id: corr_opaque_001
+                      schema_version: categorization-v1
+                      prompt_version: categorize-guardrailed-v1
+                      model_provider: local
+                      model_name: qwen2.5-7b-instruct
+                      latency_ms: 672
+                reviewRequired:
+                  summary: Недостаточно данных для уверенной категории
+                  value:
+                    result:
+                      merchant_canonical: null
+                      category_id: null
+                      category: null
+                      subcategory_id: null
+                      subcategory: null
+                      confidence: 0.31
+                      needs_review: true
+                      reason_code: insufficient_data
+                      explanation: По переданным данным нельзя надёжно определить назначение расхода.
+                    meta:
+                      request_id: 2d9b0d2e-4e3f-4f6f-9b90-4a2bfc3c50a1
+                      correlation_id: corr_opaque_001
+                      schema_version: categorization-v1
+                      prompt_version: categorize-guardrailed-v1
+                      model_provider: local
+                      model_name: qwen2.5-7b-instruct
+                      latency_ms: 672
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/ModelUnavailable' }
+        '504': { $ref: '#/components/responses/ModelTimeout' }
+  /health/live:
+    get:
+      tags: [Health]
+      operationId: liveness
+      summary: Проверить, что процесс сервиса запущен
+      security: []
+      responses:
+        '200':
+          description: Процесс работает
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LivenessResponse' }
+  /health/ready:
+    get:
+      tags: [Health]
+      operationId: readiness
+      summary: Проверить готовность модели принимать запросы
+      security: []
+      responses:
+        '200':
+          description: Модель загружена и готова
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReadinessResponse' }
+        '503':
+          description: Модель не загружена или недоступна
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReadinessResponse' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Внутренний service-to-service access token.
+  parameters:
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: false
+      description: Идентификатор сквозной трассировки; если не передан, создаётся сервисом.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+  schemas:
+    CategorizationRequest:
+      type: object
+      additionalProperties: false
+      required: [request_id, expense_id, policy_version, merchant, items, context, allowed_categories]
+      properties:
+        request_id:
+          type: string
+          format: uuid
+          description: Уникальный ID вызова.
+        expense_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Псевдонимизированный ID расхода.
+        policy_version:
+          type: string
+          minLength: 1
+          maxLength: 64
+        merchant: { $ref: '#/components/schemas/MerchantInput' }
+        items:
+          type: array
+          maxItems: 100
+          description: Текстовые описания распознанных позиций; не передавать полный OCR/PDF дамп.
+          items: { $ref: '#/components/schemas/ReceiptItem' }
+        context: { $ref: '#/components/schemas/CategorizationContext' }
+        allowed_categories:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description: Разрешённые категории только текущей компании и активной версии политики.
+          items: { $ref: '#/components/schemas/AllowedCategory' }
+    MerchantInput:
+      type: object
+      additionalProperties: false
+      required: [raw, source]
+      properties:
+        raw:
+          type: string
+          minLength: 1
+          maxLength: 512
+        parsed_candidate:
+          type: [string, 'null']
+          maxLength: 512
+        source:
+          type: string
+          enum: [qr, pdf_text, ocr, user_confirmed]
+        extraction_confidence:
+          type: [number, 'null']
+          minimum: 0
+          maximum: 1
+          description: Confidence извлечения, не вероятность правильности категории.
+    ReceiptItem:
+      type: object
+      additionalProperties: false
+      required: [description]
+      properties:
+        description:
+          type: string
+          minLength: 1
+          maxLength: 512
+        amount_minor:
+          type: [integer, 'null']
+          minimum: 0
+          description: Сумма позиции в минимальных единицах валюты; для RUB — копейки.
+        currency:
+          type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
+          description: ISO 4217 код валюты.
+    CategorizationContext:
+      type: object
+      additionalProperties: false
+      required: [input_type, extraction_status, quality_flags]
+      properties:
+        transaction_description:
+          type: [string, 'null']
+          maxLength: 512
+        input_type:
+          type: string
+          enum: [receipt_photo, receipt_pdf]
+        extraction_status:
+          type: string
+          enum: [complete, partial]
+        quality_flags:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            enum: [merchant_low_confidence, items_missing, text_truncated, mixed_basket_suspected, qr_ocr_conflict, document_partially_readable]
+    AllowedCategory:
+      type: object
+      additionalProperties: false
+      required: [id, name, description, subcategories]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description:
+          type: string
+          maxLength: 512
+        subcategories:
+          type: array
+          maxItems: 100
+          items: { $ref: '#/components/schemas/AllowedSubcategory' }
+    AllowedSubcategory:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+    CategorizationResponse:
+      type: object
+      additionalProperties: false
+      required: [result, meta]
+      properties:
+        result: { $ref: '#/components/schemas/CategorizationResult' }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+    CategorizationResult:
+      type: object
+      additionalProperties: false
+      description: |
+        Строгий структурированный ответ. category_id должен совпадать с одним из
+        allowed_categories[].id исходного запроса; subcategory_id — с подкатегорией
+        выбранной категории. При отсутствии подходящей категории или недостатке данных
+        поля категории должны быть null, needs_review=true.
+      required: [merchant_canonical, category_id, category, subcategory_id, subcategory, confidence, needs_review, reason_code, explanation]
+      properties:
+        merchant_canonical:
+          type: [string, 'null']
+          maxLength: 512
+        category_id:
+          type: [string, 'null']
+          maxLength: 64
+        category:
+          type: [string, 'null']
+          maxLength: 128
+        subcategory_id:
+          type: [string, 'null']
+          maxLength: 64
+        subcategory:
+          type: [string, 'null']
+          maxLength: 128
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Самооценка модели; не считать калиброванной вероятностью.
+        needs_review:
+          type: boolean
+        reason_code:
+          type: string
+          enum: [category_match, merchant_alias_match, low_confidence, insufficient_data, mixed_basket, merchant_unrecognized, ambiguous_transaction]
+        explanation:
+          type: string
+          maxLength: 500
+          description: Краткое объяснение на основе входных полей, без новых фактов.
+    ResponseMeta:
+      type: object
+      additionalProperties: false
+      required: [request_id, correlation_id, schema_version, prompt_version, model_provider, model_name, latency_ms]
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        correlation_id:
+          type: string
+          maxLength: 128
+        schema_version:
+          type: string
+          const: categorization-v1
+        prompt_version:
+          type: string
+          maxLength: 64
+        model_provider:
+          type: string
+          const: local
+          description: В MVP только локальный provider; автоматического платного fallback нет.
+        model_name:
+          type: string
+          const: qwen2.5-7b-instruct
+        latency_ms:
+          type: integer
+          minimum: 0
+    ApiError:
+      type: object
+      additionalProperties: false
+      required: [error, message, correlation_id]
+      properties:
+        error:
+          type: string
+          enum: [bad_request, unauthorized, forbidden, validation_error, rate_limited, internal_error, model_unavailable, model_timeout]
+        message:
+          type: string
+          maxLength: 500
+        correlation_id:
+          type: string
+          maxLength: 128
+        details:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, issue]
+            properties:
+              field: { type: string }
+              issue: { type: string }
+    LivenessResponse:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: { type: string, const: ok }
+    ReadinessResponse:
+      type: object
+      additionalProperties: false
+      required: [status, model_provider, model_name, model_loaded]
+      properties:
+        status: { type: string, enum: [ready, not_ready] }
+        model_provider: { type: string, const: local }
+        model_name: { type: string, const: qwen2.5-7b-instruct }
+        model_loaded: { type: boolean }
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Unauthorized:
+      description: Отсутствует или недействителен service token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Forbidden:
+      description: Нет права на AI-категоризацию
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    ValidationError:
+      description: Нарушена структура входных данных или предусловия API
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    RateLimited:
+      description: Превышен лимит запросов
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    InternalError:
+      description: Внутренняя ошибка сервиса
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    ModelUnavailable:
+      description: Локальная Qwen недоступна; вызывающая система переходит на правила/ручную проверку, не на платный provider
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    ModelTimeout:
+      description: Истёк timeout инференса модели
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
