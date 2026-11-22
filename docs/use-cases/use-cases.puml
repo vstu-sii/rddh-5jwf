@@ -1,0 +1,67 @@
+@startuml use-cases
+title RDDH — Use cases MVP (компенсация расходов сотрудников)
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #2D5BE3
+}
+skinparam rectangle {
+  BorderColor #555555
+}
+
+actor "Сотрудник" as emp
+actor "Бухгалтер" as acc
+actor "ФНС\n«Проверка чека»" as fns <<внешняя система>>
+actor "LLM-провайдер\n(локальная модель,\nоблачный резерв)" as llm <<внешняя система>>
+
+rectangle "RDDH" {
+  package "Сотрудник (приложение, PWA)" {
+    usecase "UC-01\nЗагрузить чек (фото или PDF)\nи получить распознанные поля" as UC01
+    usecase "UC-02\nПроверить поля и отправить\nрасход на компенсацию" as UC02
+    usecase "UC-03\nУзнать статус расхода\nи причину решения" as UC03
+    usecase "UC-04\nУвидеть неподанные расходы\nи срок подачи" as UC04
+  }
+  package "Бухгалтер (кабинет)" {
+    usecase "UC-05\nРазобрать спорные расходы\n(решение с причиной)" as UC05
+    usecase "UC-06\nУтвердить неспорные\nрасходы пачкой" as UC06
+    usecase "UC-07\nСформировать реестр\nна выплату за период" as UC07
+  }
+  package "Внутренние шаги системы" {
+    usecase "Распознать чек\nи предложить категорию" as REC
+    usecase "Получить реквизиты\nпо QR" as QR
+    usecase "Проверить на дубль" as DUP
+    usecase "Заявить расход\nбез чека" as NR
+    usecase "Выгрузить реестр\nв XLSX" as XLS
+    usecase "Отметить реестр\nвыплаченным" as PAID
+  }
+}
+
+emp --> UC01
+emp --> UC02
+emp --> UC03
+emp --> UC04
+acc --> UC05
+acc --> UC06
+acc --> UC07
+
+UC01 ..> REC : <<include>>
+QR .up.> REC : <<extend>>
+NR .up.> UC01 : <<extend>>
+UC02 ..> DUP : <<include>>
+UC05 ..> DUP : <<include>>
+XLS .up.> UC07 : <<extend>>
+PAID .up.> UC07 : <<extend>>
+
+REC -- llm
+QR -- fns
+
+legend right
+  Сплошная стрелка — актор запускает сценарий.
+  <<include>> — шаг выполняется всегда.
+  <<extend>> — необязательная ветка.
+  Порядок по времени: UC-01 → UC-02 → (UC-05 | UC-06) → UC-07;
+  UC-03 и UC-04 доступны сотруднику в любой момент.
+endlegend
+@enduml
